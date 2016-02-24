@@ -1,19 +1,33 @@
 (ns stox.core
+  (:require [clj-http.client :as client])
   (:gen-class))
 
-(def account [{:base_url "https://api.stockfighter.io/ob/api"
-             :apikey "e4df4c339dff311d0e1482c26b4192ac328e666a"
-             :venue "EUADEX"
-             :stock "PBC"}])
+(def auth {:headers {"X-Starfighter-Authorization" "83f6b1097a2d892d24c81cc3329816425bc16e5e"}})
+(def creds {:account "GFS20083343"
+            :venue "PDEPEX"
+            :stock "LWIM"})
 
-(defn -main
-  "Main method for gettin' stoxxx"
-  [& args]
-  (println "ello, World!"))
+(defn req
+  [endpoint]
+  (str "https://api.stockfighter.io/ob/api/venues/" (:venue creds) "/stocks/" (:stock creds) "/" endpoint))
 
-(println "Cleanliness!!!!!!!!!!!")
+(defn get-quote
+  "Get quote for stock."
+  []
+  (client/get (req "quote") auth))
 
-(defn limit
-  "Place a limit order."
-  [{:keys [base_url apikey venue stock]}]
-  ())
+(defn order
+  "Place an order."
+  [type dir qty price]
+  (client/post (req "orders") (conj auth {:content-type :json
+                                          :form-params {:account (:account creds)
+                                                        :venue (:venue creds)
+                                                        :symbol (:stock creds)
+                                                        :orderType type
+                                                        :direction dir
+                                                        :price price
+                                                        :qty qty}})))
+
+(def limit (partial order :limit))
+(def fok (partial order :fill-or-kill))
+(def ioc (partial order :immediate-or-cancel))
